@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{% block title %}Uitgelogd{% endblock %}
+
+{% block content %}
+<p>Je bent uitgelogd.</p>
+<a href="{% url 'login' %}">Opnieuw inloggen</a>
+{% endblock %}

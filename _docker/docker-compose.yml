@@ -1,0 +1,51 @@
+services:
+  web:
+    image: chat
+    container_name: chat-web
+    build:
+      context: ./..
+      dockerfile: _docker/Dockerfile
+    command: >
+      bash -c "python manage.py migrate && \
+               python manage.py runserver 0.0.0.0:8000"
+#    command: ls -la
+    # Set the UID en GID env vars in your docker-compose config or in bashrc profiles:
+    # https://blog.giovannidemizio.eu/2021/05/24/how-to-set-user-and-group-in-docker-compose/
+#    user: "${UID}:${GID}"
+    volumes:
+      - ./../:/code
+    ports:
+      - 8000:8000
+    env_file:
+      - ./.env.dev
+    depends_on:
+      - db
+      - redis
+  db:
+    image: postgres:17
+    container_name: chat-db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+      - ./../backups:/var/backups
+    environment:
+      - POSTGRES_USER=chat
+      - POSTGRES_PASSWORD=chat
+      - POSTGRES_DB=chat
+    ports:
+      - "15432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_chat
+    restart: unless-stopped
+    ports:
+      - "6379:6379"   # expose Redis to host, zodat Django er bij kan
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+
+
+volumes:
+  postgres_data:
+  redis_data:
+

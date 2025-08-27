@@ -1,0 +1,28 @@
+[project]
+name = "chat-app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "channels>=4.3.1",
+    "channels-redis>=4.3.0",
+    "django-stubs>=5.2.2",
+    "django>=5.2.5",
+    "djangorestframework>=3.16.1",
+    "psycopg2>=2.9.10",
+    "dj-database-url>=3.0.1",
+    "gunicorn>=23.0.0",
+    "python-decouple>=3.8",
+    "daphne>=4.2.1",
+    "django-tailwind>=4.2.0",
+    "cookiecutter>=2.6.0",
+]
+
+[dependency-groups]
+dev = [
+    "bandit>=1.8.6",
+    "black>=25.1.0",
+    "flake8>=7.3.0",
+    "isort>=6.0.1",
+]

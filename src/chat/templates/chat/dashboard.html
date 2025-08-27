@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load static dict_extras %}
+
+{% block content %}
+    <div class="flex h-full">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-800 text-white flex flex-col">
+            <div class="px-4 py-6 border-b border-gray-700">
+                <h2 class="text-lg font-semibold">Direct messages</h2>
+            </div>
+            <nav class="flex overflow-y-auto">
+                <ul class="space-y-1 px-2 py-3">
+                    {% for room in direct_rooms %}
+                        <li>
+                            <a
+                                    href="{% url 'chat:dashboard_with_room' room.id %}"
+                                    hx-get="{% url 'chat:room_detail_partial' room.id %}"
+                                    hx-target="#room-detail"
+                                    class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700 transition"
+                            >
+                                <span>{{ room.name }}</span>
+
+                                {% with count=room.unread_counts.request.user.id %}
+                                    <span
+                                            id="unread-{{ room.id }}"
+                                            class="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-red-600 text-white {% if count == 0 %}invisible{% endif %}">
+                            {{ count }}
+                        </span>
+                                {% endwith %}
+                            </a>
+                        </li>
+                    {% empty %}
+                        <li class="px-3 text-gray-400">Je zit nog in geen enkele room</li>
+                    {% endfor %}
+                </ul>
+            </nav>
+
+            <div class="px-4 py-6 border-b border-gray-700">
+                <h2 class="text-lg font-semibold">Group messages</h2>
+            </div>
+            <nav class="flex overflow-y-auto">
+                <ul class="space-y-1 px-2 py-3">
+                    {% for room in group_rooms %}
+                        <li>
+                            <a
+                                    href="{% url 'chat:dashboard_with_room' room.id %}"
+                                    hx-get="{% url 'chat:room_detail_partial' room.id %}"
+                                    hx-target="#room-detail"
+                                    class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700 transition"
+                            >
+                                <span>{{ room.name }}</span>
+
+                                {% with count=room.unread_counts|get_item:request.user.id %}
+                                    <span
+                                            id="unread-{{ room.id }}"
+                                            class="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-red-600 text-white {% if count == 0 %}invisible{% endif %}">
+                            {{ count }}
+                        </span>
+                                {% endwith %}
+                            </a>
+                        </li>
+                    {% empty %}
+                        <li class="px-3 text-gray-400">Je zit nog in geen enkel groepsgesprek</li>
+                    {% endfor %}
+                </ul>
+
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <main class="flex-1 bg-gray-50 pb-4">
+            <div id="room-detail" class="h-full p-6">
+                {% if selected_room %}
+                    {% include "chat/_room_detail.html" with room=selected_room messages=messages %}
+                {% else %}
+                    <div class="flex h-full items-center justify-center text-gray-500">
+                        <p>Kies een room in de lijst links om te beginnen.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    <script>
+        let activeRoomId
+        const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+        const chatSocket = new WebSocket(
+            `${protocol}://${window.location.host}/ws/chat/`
+        );
+
+        chatSocket.onmessage = function (e) {
+            const data = JSON.parse(e.data);
+            document.dispatchEvent(new CustomEvent("chatEvent", {detail: data}));
+        };
+
+        function sendMessage(roomId, message) {
+            chatSocket.send(JSON.stringify({
+                action: "send_message",
+                room_id: roomId,
+                message: message
+            }));
+        }
+
+        function markAsRead(roomId, lastMessageId = null) {
+            chatSocket.send(JSON.stringify({
+                action: "mark_as_read",
+                room_id: roomId,
+                last_message_id: lastMessageId
+            }));
+        }
+
+        function getActiveRoomId() {
+            const container = document.querySelector("#room-detail-content")
+            if (container) {
+                const result = container.dataset.activeRoomId || null
+                if (result) {
+                    return result.split("-")[1]
+                }
+            }
+        }
+
+        // luister naar HTMX events
+        document.body.addEventListener("htmx:afterSwap", function (event) {
+            if (event.target.id === "room-detail") {
+                const activeRoomId = getActiveRoomId();
+                console.log("Nieuwe actieve room geladen:", activeRoomId);
+            }
+        })
+
+        // 🔔 Badge updater
+        document.addEventListener("chatEvent", e => {
+            const data = e.detail;
+            if (data.type === "chat_message") {
+                const activeRoomId = getActiveRoomId()
+                const badge = document.querySelector(`#unread-${data.room_id}`);
+
+                if (badge) {
+                    // Alleen badge ophogen als het bericht NIET in de actieve room is
+                    if (data.room_id !== activeRoomId) {
+                        let count = parseInt(badge.textContent) || 0;
+                        count += 1;
+                        badge.textContent = count;
+
+                        // toon badge
+                        badge.classList.remove("invisible");
+                    }
+                } else if (data.room_id === activeRoomId) {
+                    markAsRead(data.room_id)
+                }
+
+            }
+
+
+            if (data.type === "unread_update") {
+                const badge = document.querySelector(`#unread-${data.room_id}`);
+                if (badge) {
+                    if (data.unread > 0) {
+                        badge.textContent = data.unread
+                        badge.classList.remove("invisible")
+                    } else {
+                        badge.classList.add("invisible");
+                    }
+                    badge.textContent = data.unread > 0 ? data.unread : "";
+                }
+            }
+        });
+    </script>
+{% endblock %}
