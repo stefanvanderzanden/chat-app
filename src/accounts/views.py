@@ -7,7 +7,7 @@ from .forms import SignUpForm
 
 
 class SignUpView(FormView):
-    template_name = "accounts/signup.html"
+    template_name = "registration/signup.html"
     form_class = SignUpForm
     success_url = reverse_lazy("chat:room_list")  # pas dit aan naar je chat startpagina
 

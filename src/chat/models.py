@@ -29,8 +29,14 @@ class Room(models.Model):
     def __str__(self):
         if self.room_type == "direct":
             users = self.participants.all()
-            return f"Direct: {', '.join([u.username for u in users])}"
+            return f"Direct: {', '.join([u.email for u in users])}"
         return f"Group: {self.name}"
+
+    def get_display_name(self, user):
+        if self.room_type == "direct":
+            other_user = self.participants.exclude(id=user.id).first()
+            return other_user.full_name if other_user else "Unknown"
+        return self.name
 
     @property
     def unread_counts(self):

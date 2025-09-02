@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block content %}
+    <div class="flex flex-col justify-center sm:h-screen p-4">
+        <div class="max-w-md w-full mx-auto border border-gray-300 rounded-2xl p-8">
+            <div class="text-center mb-2">
+                <img src="{% static 'images/logo.png' %}" alt="logo" class="w-32 inline-block">
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+                {% if form.errors %}
+                    <p class="text-red-500 mb-4">{% trans 'Ongeldige gebruikersnaam of wachtwoord' %}</p>
+                {% endif %}
+                <div class="space-y-6">
+                    <div>
+                        <label class="text-gray-700 text-sm font-medium mb-2 block">{% trans 'E-mailadres' %}</label>
+                        <input
+                                name="email"
+                                type="text"
+                                id="id_email"
+                                class="text-gray-700 bg-white border border-gray-300 w-full text-sm px-4 py-3 rounded-md outline-mint-200"
+                        >
+                    </div>
+                    <div>
+                        <label class="text-gray-700 text-sm font-medium mb-2 block">{% trans 'Wachtwoord' %}</label>
+                        <input
+                                name="password1"
+                                type="password"
+                                id="id_password1"
+                                class="text-gray-700 bg-white border border-gray-300 w-full text-sm px-4 py-3 rounded-md outline-mint-200"
+                        >
+                    </div>
+                    <div>
+                        <label class="text-gray-700 text-sm font-medium mb-2 block">{% trans 'Herhaal wachtwoord' %}</label>
+                        <input
+                                name="password2"
+                                type="password"
+                                id="id_password2"
+                                class="text-gray-700 bg-white border border-gray-300 w-full text-sm px-4 py-3 rounded-md outline-mint-200"
+                        >
+                    </div>
+                    <div>
+                        <label class="text-gray-700 text-sm font-medium mb-2 block">{% trans 'Uitnodigingscode' %}</label>
+                        <input
+                                name="invite_code"
+                                type="text"
+                                id="id_invite_code"
+                                class="text-gray-700 bg-white border border-gray-300 w-full text-sm px-4 py-3 rounded-md outline-mint-200"
+                        >
+                    </div>
+                </div>
+
+                <div class="mt-12">
+                    <button
+                            type="submit"
+                            class="w-full py-3 px-4 text-sm tracking-wider font-medium rounded-md text-white bg-mint-400 hover:bg-mint-600 focus:outline-none cursor-pointer">
+                        {% trans 'Registreren' %}
+                    </button>
+                </div>
+                <p class="text-slate-600 text-sm mt-6 text-center">
+                    {% trans 'Heb je al een account?' %}
+                    <a href="{% url 'login' %}"
+                       class="text-mint-500 font-medium hover:underline underline-offset-4 ml-1">Log hier in</a>
+                </p>
+            </form>
+        </div>
+    </div>
+{% endblock %}

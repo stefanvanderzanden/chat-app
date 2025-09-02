@@ -74,7 +74,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "room_id": room_id,
                     "message_id": msg.id,
                     "message": msg.text,
-                    "user": self.user.email,
+                    "user": self.user.full_name,
+                    "timestamp": str(msg.timestamp),
                 },
             )
 
@@ -87,7 +88,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await mark_as_read(room_id, self.user, last_message.id)
 
             unread = await get_unread_count(room_id, self.user)
-            print("YES: ", unread)
 
             # Send update
             await self.send(text_data=json.dumps({
@@ -106,6 +106,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "message_id": event["message_id"],
             "message": event["message"],
             "user": event["user"],
+            "timestamp": event["timestamp"],
         }))
 
     async def disconnect(self, close_code):

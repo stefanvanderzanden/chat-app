@@ -23,13 +23,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     class Meta:
-        verbose_name = _("Gebruiker")
-        verbose_name_plural = _("Gebruikers")
+        verbose_name = _("User")
+        verbose_name_plural = _("Users")
 
     def __str__(self):
-        return self.get_full_name()
+        return self.full_name
 
-    def get_full_name(self):
+    @property
+    def full_name(self):
         """
         Return the first_name plus the last_name, with a space in between.
         """

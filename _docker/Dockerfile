@@ -1,48 +1,64 @@
-FROM python:3.12-slim
+# --------------------------
+# STAGE 1: base builder
+# --------------------------
+FROM python:3.12-slim AS builder
 
-ENV USER=app-user \
-    PYTHONDONTWRITEBYTECODE=1 \
+ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_PROJECT_ENVIRONMENT=/usr/local
 
-
+# Nodig voor het bouwen van wheels
 RUN apt-get update && apt-get install --no-install-recommends -y \
-    curl libpq-dev python3-dev build-essential\
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && useradd -m -s /bin/bash $USER
+    curl libpq-dev python3-dev build-essential \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-ENV APP_DIR=/home/$USER/src
+WORKDIR /app
 
-RUN mkdir $APP_DIR
-RUN mkdir $APP_DIR/staticfiles
+# Alleen dependency-files eerst (cache-laag!)
+COPY pyproject.toml uv.lock ./
 
-WORKDIR $APP_DIR
-
-RUN --mount=type=cache,target=/home/$USER/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+# Installeer dependencies in een eigen virtuele omgeving
+RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project
 
+# Copy source
+COPY src ./src
 
-COPY ../pyproject.toml uv.lock $APP_DIR
-COPY ../src $APP_DIR
-
-RUN --mount=type=cache,target=/home/$USER/.cache/uv \
+# Installeer project in omgeving
+RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen
 
-ENV PYTHONPATH=$APP_DIR
+# --------------------------
+# STAGE 2: runtime image
+# --------------------------
+FROM python:3.12-slim AS runtime
 
-RUN uv run python manage.py collectstatic --no-input
+ENV USER=app-user \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-RUN chown -R "$USER":"$USER" $APP_DIR
+# Alleen minimale runtime deps
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    libpq5 curl \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    && useradd -m -s /bin/bash $USER
+
+WORKDIR /home/$USER/app
+
+# Kopieer alleen geïnstalleerde packages uit de builder
+COPY --from=builder /usr/local /usr/local
+
+# Kopieer de projectcode
+COPY --from=builder /app/src /home/$USER/app
+RUN mkdir -p /home/$USER/app/staticfiles /home/$USER/app/media
+
+# Ownership fix
+RUN chown -R "$USER":"$USER" /home/$USER/app
 USER $USER
 
 EXPOSE 8000
 
-
-# Start Gunicorn zonder venv
-CMD ["gunicorn", "_project.wsgi:application", "--bind", "0.0.0.0:8000"]
+ENTRYPOINT ["./entrypoint.sh"]

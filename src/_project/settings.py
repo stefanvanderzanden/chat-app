@@ -139,24 +139,30 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [
     BASE_DIR / "_project" / "static",
 ]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
-LOGIN_REDIRECT_URL = "chat:room_list"   # na inloggen -> chatpagina
-LOGOUT_REDIRECT_URL = "login"           # na uitloggen -> loginpagina
+LOGIN_REDIRECT_URL = "chat:dashboard"
+LOGOUT_REDIRECT_URL = "login"
 
 ASGI_APPLICATION = "_project.asgi.application"
 
+REDIS_HOST = config("REDIS_HOST", default="localhost", cast=str)
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [("127.0.0.1", 6379)]},
+        "CONFIG": {"hosts": [(REDIS_HOST, 6379)]},
     },
 }
 
@@ -166,3 +172,5 @@ REST_FRAMEWORK = {
 }
 
 TAILWIND_APP_NAME = "theme"
+# NPM_BIN_PATH = r"C:\nvm4w\nodejs\node.exe"
+NPM_BIN_PATH = 'npm.cmd'

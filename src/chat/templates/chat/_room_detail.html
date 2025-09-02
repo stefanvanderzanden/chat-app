@@ -1,24 +1,73 @@
+{% load chat_extras %}
 <div
-    id="room-detail-content"
-    data-active-room-id="room-{{ room.id }}"
-    class="flex flex-col h-full"
-    >
+        id="room-detail-content"
+        data-active-room-id="room-{{ room.id }}"
+        class="flex flex-col"
+>
     <header class="pb-4 border-b border-gray-200">
-        <h2 class="text-2xl font-bold text-gray-800">{{ room.name }}</h2>
+        <h2 class="text-2xl font-bold text-gray-800">
+            {% if room.room_type == "direct" %}
+                <div class="flex items-center gap-4">
+                    <div class="relative w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
+                        <svg class="absolute w-12 h-12 text-gray-400 -left-1" fill="currentColor" viewBox="0 0 20 20"
+                             xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                  clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    {% room_display_name room request.user %}
+
+                </div>
+            {% else %}
+                # {% room_display_name room request.user %}
+            {% endif %}
+        </h2>
     </header>
 
     <!-- Chat log -->
     <div id="chat-container"
          class="flex-1 overflow-y-auto mt-4 bg-white border border-gray-200 rounded-lg p-4 space-y-2 shadow-sm">
-        <ul id="chat-log" class="space-y-2">
+        <div id="chat-log" class="space-y-2">
             {% for message in messages %}
-            <li class="text-sm text-gray-700">
-                <span class="font-semibold">{{ message.user.email }}</span>:
-                {{ message.text }}
-                <span class="text-xs text-gray-400 ml-2">[{{ message.timestamp|date:"H:i" }}]</span>
-            </li>
+                {% ifchanged message.timestamp|date:"Y-m-d" %}
+                    <!-- Divider -->
+                    <div class="flex items-center my-4">
+                        <div class="flex-grow border-t border-gray-300"></div>
+                        <span class="mx-4 text-xs text-gray-500 uppercase tracking-wide">
+                        {{ message.timestamp|date:"d-m-Y" }}
+                    </span>
+                        <div class="flex-grow border-t border-gray-300"></div>
+                    </div>
+                {% endifchanged %}
+                <div
+                    class="chat-message flex items-start space-x-3 px-3 py-1 hover:bg-gray-50"
+                    data-date="{{ message.timestamp|date:'Y-m-d' }}"
+                >
+                    <!-- Avatar -->
+                    <div class="relative w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
+                        <svg class="absolute w-12 h-12 text-gray-400 -left-1" fill="currentColor" viewBox="0 0 20 20"
+                             xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                  clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+
+                    <!-- Message content -->
+                    <div class="flex-1">
+                        <!-- Header: name + timestamp -->
+                        <div class="flex items-baseline space-x-2">
+                            <span class="font-medium text-gray-900">{{ message.user.full_name }}</span>
+                            <span class="text-xs text-gray-500">{{ message.timestamp|date:"H:i" }}</span>
+                        </div>
+
+                        <!-- Actual message -->
+                        <p class="text-gray-800">
+                            {{ message.text }}
+                        </p>
+                    </div>
+                </div>
             {% endfor %}
-        </ul>
+        </div>
     </div>
 
     <!-- Chat form -->
@@ -26,72 +75,11 @@
         <input id="chat-message-input"
                type="text"
                placeholder="Typ je bericht..."
-               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring focus:ring-indigo-200 focus:outline-none"
+               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring focus:ring-mint-200 focus:outline-none"
                autocomplete="off">
         <button type="submit"
-                class="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition">
+                class="px-4 py-2 bg-mint-500 text-white font-medium rounded-lg hover:bg-mint-600 transition">
             Verstuur
         </button>
     </form>
 </div>
-
-<script>
-    const roomId = "{{ room.id|escapejs }}";
-    const chatLog = document.querySelector("#chat-log");
-    const messageInput = document.querySelector("#chat-message-input");
-
-    // 📥 Luister naar globale socket events
-    document.addEventListener("chatEvent", e => {
-        console.log('EVENTLISTERNER chat')
-
-        const data = e.detail;
-        if (data.type === "chat_message" && data.room_id == roomId) {
-            const div = document.createElement("div");
-            div.className = "text-sm text-gray-700";
-            div.innerHTML = `<span class="font-semibold">${data.user}</span>: ${data.message}
-                <span class="text-xs text-gray-400 ml-2">[${new Date().toLocaleTimeString()}]</span>`;
-            chatLog.appendChild(div);
-            chatLog.scrollTop = chatLog.scrollHeight;
-        }
-    });
-
-    // 📤 Verstuur nieuw bericht
-    document.querySelector("#chat-form").addEventListener("submit", function(e) {
-        e.preventDefault();
-        if (messageInput.value.trim() === "") return;
-
-        sendMessage(roomId, messageInput.value);
-        messageInput.value = "";
-    });
-
-    // ✅ Markeer gelezen zodra je de room opent
-    markAsRead(roomId);
-</script>
-
-{#<script>#}
-{#    const roomId = "{{ room.id|escapejs }}";#}
-{#    const chatLog = document.querySelector("#chat-log");#}
-{#    const messageInput = document.querySelector("#chat-message-input");#}
-{##}
-{#    // luister naar globale chat events#}
-{#    document.addEventListener("chatMessage", e => {#}
-{#        const data = e.detail;#}
-{#        if (data.room_id === roomId) {#}
-{#            const li = document.createElement("li");#}
-{#            li.className = "text-sm text-gray-700";#}
-{#            li.innerHTML = `<span class="font-semibold">${data.user}</span>: ${data.message}`;#}
-{#            chatLog.appendChild(li);#}
-{#            chatLog.scrollTop = chatLog.scrollHeight;#}
-{#        } else {#}
-{#            // hier kun je je sidebar badge updaten#}
-{#        }#}
-{#    });#}
-{##}
-{#    document.querySelector("#chat-form").addEventListener("submit", function(e) {#}
-{#        e.preventDefault();#}
-{#        if (messageInput.value.trim() === "") return;#}
-{##}
-{#        sendMessage(roomId, messageInput.value); // via globale functie#}
-{#        messageInput.value = "";#}
-{#    });#}
-{#</script>#}

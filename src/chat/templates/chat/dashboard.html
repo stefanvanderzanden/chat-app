@@ -1,75 +1,90 @@
 {% extends "base.html" %}
-{% load static dict_extras %}
+{% load static chat_extras %}
 
 {% block content %}
-    <div class="flex h-full">
+    <div class="flex h-full pb-[env(safe-area-inset-bottom)]">
         <!-- Sidebar -->
-        <aside class="w-64 bg-gray-800 text-white flex flex-col">
-            <div class="px-4 py-6 border-b border-gray-700">
-                <h2 class="text-lg font-semibold">Direct messages</h2>
-            </div>
-            <nav class="flex overflow-y-auto">
-                <ul class="space-y-1 px-2 py-3">
-                    {% for room in direct_rooms %}
-                        <li>
-                            <a
-                                    href="{% url 'chat:dashboard_with_room' room.id %}"
-                                    hx-get="{% url 'chat:room_detail_partial' room.id %}"
-                                    hx-target="#room-detail"
-                                    class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700 transition"
-                            >
-                                <span>{{ room.name }}</span>
+        <aside class="w-64 bg-mint-900 text-white flex flex-col">
+            <div class="flex flex-col flex-1">
+                <div class="px-4 py-6 border-b border-gray-700">
+                    <h2 class="text-lg font-semibold">Een-op-een gesprekken</h2>
+                </div>
+                <nav class="flex overflow-y-auto">
+                    <ul class="space-y-1 px-2 py-3">
+                        {% for room in direct_rooms %}
+                            <li>
+                                <a
+                                        href="{% url 'chat:dashboard_with_room' room.id %}"
+                                        hx-get="{% url 'chat:room_detail_partial' room.id %}"
+                                        hx-target="#room-detail"
+                                        {# hx-push-url="true" #}
+                                        class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700 transition"
+                                >
+                                    <span>{% room_display_name room request.user %}</span>
 
-                                {% with count=room.unread_counts.request.user.id %}
-                                    <span
-                                            id="unread-{{ room.id }}"
-                                            class="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-red-600 text-white {% if count == 0 %}invisible{% endif %}">
+                                    {% with count=room.unread_counts|get_item:request.user.id %}
+                                        <span
+                                                id="unread-{{ room.id }}"
+                                                class="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-red-600 text-white {% if count == 0 or not count %}invisible{% endif %}">
                             {{ count }}
                         </span>
-                                {% endwith %}
-                            </a>
-                        </li>
-                    {% empty %}
-                        <li class="px-3 text-gray-400">Je zit nog in geen enkele room</li>
-                    {% endfor %}
-                </ul>
-            </nav>
+                                    {% endwith %}
+                                </a>
+                            </li>
+                            {% empty %}
+                            <li class="px-3 text-gray-400">Je zit nog in geen enkele room</li>
+                        {% endfor %}
+                    </ul>
+                </nav>
 
-            <div class="px-4 py-6 border-b border-gray-700">
-                <h2 class="text-lg font-semibold">Group messages</h2>
-            </div>
-            <nav class="flex overflow-y-auto">
-                <ul class="space-y-1 px-2 py-3">
-                    {% for room in group_rooms %}
-                        <li>
-                            <a
-                                    href="{% url 'chat:dashboard_with_room' room.id %}"
-                                    hx-get="{% url 'chat:room_detail_partial' room.id %}"
-                                    hx-target="#room-detail"
-                                    class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700 transition"
-                            >
-                                <span>{{ room.name }}</span>
+                <div class="px-4 py-6 border-b border-gray-700">
+                    <h2 class="text-lg font-semibold">Groepsgesprekken</h2>
+                </div>
+                <nav class="flex overflow-y-auto">
+                    <ul class="space-y-1 px-2 py-3">
+                        {% for room in group_rooms %}
+                            <li>
+                                <a
+                                        href="{% url 'chat:dashboard_with_room' room.id %}"
+                                        hx-get="{% url 'chat:room_detail_partial' room.id %}"
+                                        hx-target="#room-detail"
+                                        class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-700 transition"
+                                >
+                                    <span>{{ room.name }}</span>
 
-                                {% with count=room.unread_counts|get_item:request.user.id %}
-                                    <span
-                                            id="unread-{{ room.id }}"
-                                            class="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-red-600 text-white {% if count == 0 %}invisible{% endif %}">
+                                    {% with count=room.unread_counts|get_item:request.user.id %}
+                                        <span
+                                                id="unread-{{ room.id }}"
+                                                class="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-red-600 text-white {% if count == 0 %}invisible{% endif %}">
                             {{ count }}
                         </span>
-                                {% endwith %}
-                            </a>
-                        </li>
-                    {% empty %}
-                        <li class="px-3 text-gray-400">Je zit nog in geen enkel groepsgesprek</li>
-                    {% endfor %}
-                </ul>
+                                    {% endwith %}
+                                </a>
+                            </li>
+                            {% empty %}
+                            <li class="px-3 text-gray-400">Je zit nog in geen enkel groepsgesprek</li>
+                        {% endfor %}
+                    </ul>
 
+                </nav>
+            </div>
+            <nav>
+                <div class="px-4 py-6 border-b border-gray-700">
+                    <h2 class="text-lg font-semibold">Acties</h2>
+                </div>
+                <div class="px-4 py-6">
+                    <form action="{% url 'logout' %}" method="POST">
+                        {% csrf_token %}
+                        <button class="hover:cursor-pointer" type="submit">Uitloggen</button>
+                    </form>
+
+                </div>
             </nav>
         </aside>
 
         <!-- Main content -->
         <main class="flex-1 bg-gray-50 pb-4">
-            <div id="room-detail" class="h-full p-6">
+            <div id="room-detail" class="h-full overflow-y-scroll p-6">
                 {% if selected_room %}
                     {% include "chat/_room_detail.html" with room=selected_room messages=messages %}
                 {% else %}
@@ -85,7 +100,8 @@
 {% block js %}
     {{ block.super }}
     <script>
-        let activeRoomId
+        let activeRoomId = null;
+
         const protocol = window.location.protocol === "https:" ? "wss" : "ws";
         const chatSocket = new WebSocket(
             `${protocol}://${window.location.host}/ws/chat/`
@@ -113,59 +129,237 @@
         }
 
         function getActiveRoomId() {
-            const container = document.querySelector("#room-detail-content")
+            const container = document.querySelector("#room-detail-content");
             if (container) {
-                const result = container.dataset.activeRoomId || null
+                const result = container.dataset.activeRoomId || null;
                 if (result) {
-                    return result.split("-")[1]
+                    return result.split("-")[1];  // verwacht bv: "room-12"
                 }
             }
+            return null;
         }
 
-        // luister naar HTMX events
+        // 🚀 htmx event: elke keer dat de detail view vervangen wordt
         document.body.addEventListener("htmx:afterSwap", function (event) {
             if (event.target.id === "room-detail") {
-                const activeRoomId = getActiveRoomId();
+                activeRoomId = getActiveRoomId();
                 console.log("Nieuwe actieve room geladen:", activeRoomId);
-            }
-        })
 
-        // 🔔 Badge updater
-        document.addEventListener("chatEvent", e => {
-            const data = e.detail;
-            if (data.type === "chat_message") {
-                const activeRoomId = getActiveRoomId()
-                const badge = document.querySelector(`#unread-${data.room_id}`);
+                // hook de form submit van de geladen room
+                const chatForm = document.querySelector("#chat-form");
+                const messageInput = document.querySelector("#chat-message-input");
+                const chatLog = document.querySelector("#chat-log");
 
-                if (badge) {
-                    // Alleen badge ophogen als het bericht NIET in de actieve room is
-                    if (data.room_id !== activeRoomId) {
-                        let count = parseInt(badge.textContent) || 0;
-                        count += 1;
-                        badge.textContent = count;
+                if (chatForm && messageInput && chatLog) {
+                    chatForm.onsubmit = function (e) {
+                        e.preventDefault();
+                        if (messageInput.value.trim() === "") return;
+                        sendMessage(activeRoomId, messageInput.value);
+                        messageInput.value = "";
+                    };
 
-                        // toon badge
-                        badge.classList.remove("invisible");
-                    }
-                } else if (data.room_id === activeRoomId) {
-                    markAsRead(data.room_id)
-                }
-
-            }
-
-
-            if (data.type === "unread_update") {
-                const badge = document.querySelector(`#unread-${data.room_id}`);
-                if (badge) {
-                    if (data.unread > 0) {
-                        badge.textContent = data.unread
-                        badge.classList.remove("invisible")
-                    } else {
-                        badge.classList.add("invisible");
-                    }
-                    badge.textContent = data.unread > 0 ? data.unread : "";
+                    // markeer direct als gelezen
+                    markAsRead(activeRoomId);
                 }
             }
         });
+
+        // 🔔 Badge + live message updater
+        document.addEventListener("chatEvent", e => {
+            const data = e.detail;
+
+            if (data.type === "chat_message") {
+                const currentActive = getActiveRoomId();
+                const badge = document.querySelector(`#unread-${data.room_id}`);
+
+                // bericht in actieve room → toon direct
+                if (data.room_id === currentActive) {
+                    const chatLog = document.querySelector("#chat-log");
+                    if (chatLog) {
+                        const lastMessage = chatLog.querySelector(".chat-message:last-of-type");
+                        let lastDate = null;
+
+                        if (lastMessage) {
+                            lastDate = lastMessage.getAttribute("data-date");
+                        }
+                        const messageDate = new Date(data.timestamp).toISOString().split("T")[0];
+
+                        // check of we een nieuwe datum-divider moeten renderen
+                        const dateStr = new Date(data.timestamp).toLocaleDateString();
+                        console.log('dateStr', dateStr);
+                        if (lastDate !== messageDate) {
+                            const divider = document.createElement("div");
+                            divider.className = "flex items-center my-4";
+
+                            const line = document.createElement("div");
+                            line.className = "flex-grow border-t border-gray-300";
+
+                            const label = document.createElement("span");
+                            label.className = "mx-4 text-xs text-gray-500 uppercase tracking-wide";
+                            label.textContent = dateStr;
+
+                            divider.appendChild(line.cloneNode());
+                            divider.appendChild(label);
+                            divider.appendChild(line);
+
+                            chatLog.appendChild(divider);
+                        }
+
+                        // daarna jouw bestaande bericht-rendering
+                        const wrapper = document.createElement("div");
+                        wrapper.className = "flex items-start space-x-3 px-3 py-1 hover:bg-gray-50";
+
+                        // Avatar
+                        const avatar = document.createElement("div");
+                        avatar.className = "relative w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600";
+
+                        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                        svg.setAttribute("class", "absolute w-12 h-12 text-gray-400 -left-1");
+                        svg.setAttribute("fill", "currentColor");
+                        svg.setAttribute("viewBox", "0 0 20 20");
+                        svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+                        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                        path.setAttribute("fill-rule", "evenodd");
+                        path.setAttribute("clip-rule", "evenodd");
+                        path.setAttribute("d", "M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z");
+
+                        svg.appendChild(path);
+                        avatar.appendChild(svg);
+
+                        // Message content wrapper
+                        const content = document.createElement("div");
+                        content.className = "flex-1";
+
+                        // Header: name + timestamp
+                        const header = document.createElement("div");
+                        header.className = "flex items-baseline space-x-2";
+
+                        const name = document.createElement("span");
+                        name.className = "font-medium text-gray-900";
+                        name.textContent = data.user;
+
+                        const timestamp = document.createElement("span");
+                        timestamp.className = "text-xs text-gray-500";
+                        timestamp.textContent = new Date(data.timestamp).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})
+
+                        header.appendChild(name);
+                        header.appendChild(timestamp);
+
+                        // Actual message
+                        const message = document.createElement("p");
+                        message.className = "text-gray-800";
+                        message.textContent = data.message;
+
+                        content.appendChild(header);
+                        content.appendChild(message);
+
+                        wrapper.appendChild(avatar);
+                        wrapper.appendChild(content);
+
+                        chatLog.appendChild(wrapper);
+                        chatLog.scrollTop = chatLog.scrollHeight;
+
+                        markAsRead(data.room_id, data.message_id);
+                    }
+                    {#if (chatLog) {#}
+                    {#    // Outer wrapper#}
+                    {#    const wrapper = document.createElement("div");#}
+                    {#    wrapper.className = "flex items-start space-x-3 px-3 py-1 hover:bg-gray-50";#}
+                    {##}
+                    {#    // Avatar#}
+                    {#    const avatar = document.createElement("div");#}
+                    {#    avatar.className = "relative w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600";#}
+                    {##}
+                    {#    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");#}
+                    {#    svg.setAttribute("class", "absolute w-12 h-12 text-gray-400 -left-1");#}
+                    {#    svg.setAttribute("fill", "currentColor");#}
+                    {#    svg.setAttribute("viewBox", "0 0 20 20");#}
+                    {#    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");#}
+                    {##}
+                    {#    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");#}
+                    {#    path.setAttribute("fill-rule", "evenodd");#}
+                    {#    path.setAttribute("clip-rule", "evenodd");#}
+                    {#    path.setAttribute("d", "M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z");#}
+                    {##}
+                    {#    svg.appendChild(path);#}
+                    {#    avatar.appendChild(svg);#}
+                    {##}
+                    {#    // Message content wrapper#}
+                    {#    const content = document.createElement("div");#}
+                    {#    content.className = "flex-1";#}
+                    {##}
+                    {#    // Header: name + timestamp#}
+                    {#    const header = document.createElement("div");#}
+                    {#    header.className = "flex items-baseline space-x-2";#}
+                    {##}
+                    {#    const name = document.createElement("span");#}
+                    {#    name.className = "font-medium text-gray-900";#}
+                    {#    name.textContent = data.user;#}
+                    {##}
+                    {#    const timestamp = document.createElement("span");#}
+                    {#    timestamp.className = "text-xs text-gray-500";#}
+                    {#    timestamp.textContent = new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});#}
+                    {##}
+                    {#    header.appendChild(name);#}
+                    {#    header.appendChild(timestamp);#}
+                    {##}
+                    {#    // Actual message#}
+                    {#    const message = document.createElement("p");#}
+                    {#    message.className = "text-gray-800";#}
+                    {#    message.textContent = data.message;#}
+                    {##}
+                    {#    content.appendChild(header);#}
+                    {#    content.appendChild(message);#}
+                    {##}
+                    {#    // Combine#}
+                    {#    wrapper.appendChild(avatar);#}
+                    {#    wrapper.appendChild(content);#}
+                    {##}
+                    {#    chatLog.appendChild(wrapper);#}
+                    {#    chatLog.scrollTop = chatLog.scrollHeight;#}
+                    {##}
+                    {#    // meteen markeren als gelezen#}
+                    {#    markAsRead(data.room_id, data.message_id);#}
+                    {#}#}
+                        {#if (chatLog) {#}
+                        {#    const div = document.createElement("div");#}
+                        {#    div.className = "text-sm text-gray-700";#}
+                        {#    div.innerHTML = `#}
+                        {#    <span class="font-semibold">${data.user}</span>: ${data.message}#}
+                        {#    <span class="text-xs text-gray-400 ml-2">[${new Date().toLocaleTimeString()}]</span>#}
+                        {#`;#}
+                        {#    chatLog.appendChild(div);#}
+                        {#    chatLog.scrollTop = chatLog.scrollHeight;#}
+                        {##}
+                        {#    // meteen markeren als gelezen#}
+                        {#    markAsRead(data.room_id, data.message_id);#}
+                        {#}#}
+                        }
+                    else
+                        if (badge) {
+                            // bericht in NIET-actieve room → badge ophogen
+                            let count = parseInt(badge.textContent) || 0;
+                            count += 1;
+                            badge.textContent = count;
+                            badge.classList.remove("invisible");
+                        }
+                    }
+
+                    if (data.type === "unread_update") {
+                        const badge = document.querySelector(`#unread-${data.room_id}`);
+                        if (badge) {
+                            if (data.unread > 0) {
+                                badge.textContent = data.unread;
+                                badge.classList.remove("invisible");
+                            } else {
+                                badge.classList.add("invisible");
+                                badge.textContent = "";
+                            }
+                        }
+                    }
+                }
+            )
+                ;
     </script>
 {% endblock %}
