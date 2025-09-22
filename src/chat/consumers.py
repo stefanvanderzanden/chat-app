@@ -75,6 +75,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "message_id": msg.id,
                     "message": msg.text,
                     "user": self.user.full_name,
+                    "user_id": self.user.id,
                     "timestamp": str(msg.timestamp),
                 },
             )
@@ -106,6 +107,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "message_id": event["message_id"],
             "message": event["message"],
             "user": event["user"],
+            "user_id": event["user_id"],
             "timestamp": event["timestamp"],
         }))
 

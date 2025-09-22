@@ -15,9 +15,11 @@ dependencies = [
     "gunicorn>=23.0.0",
     "python-decouple>=3.8",
     "daphne>=4.2.1",
-    "django-tailwind>=4.2.0",
     "cookiecutter>=2.6.0",
     "uvicorn[standard]>=0.35.0",
+    "djangorestframework-simplejwt>=5.5.1",
+    "django-cors-headers>=4.8.0",
+    "drf-nested-routers>=0.95.0",
 ]
 
 [dependency-groups]
