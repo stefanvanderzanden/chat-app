@@ -8,11 +8,6 @@ __pycache__/
 db.sqlite3
 media/
 
-# Node / Tailwind
-src/theme/static_src/node_modules
-src/theme/static_src/.next
-src/theme/static_src/dist
-
 # Docker
 .dockerignore
 _docker/Dockerfile
