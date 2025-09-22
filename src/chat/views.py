@@ -62,13 +62,17 @@ class RoomViewSet(ModelViewSet):
     def messages(self, request, pk=None):
         """Get all messages for a specific room"""
         room = self.get_object()
-        messages = room.messages.select_related('user').order_by('timestamp')
+        # FIXME: Fetching 20 latest messages for now, need to implement pagination and infinite scroll.
+        last_20_messages = list(
+            room.messages.select_related('user').order_by('-timestamp')[:20]
+        )
+        last_20_messages.reverse()
 
         # Pagination could be added here if needed
-        page = self.paginate_queryset(messages)
+        page = self.paginate_queryset(last_20_messages)
         if page is not None:
             serializer = MessageSerializer(page, many=True, context={'request': request})
             return self.get_paginated_response(serializer.data)
 
-        serializer = MessageSerializer(messages, many=True, context={'request': request})
+        serializer = MessageSerializer(last_20_messages, many=True, context={'request': request})
         return Response(serializer.data)
